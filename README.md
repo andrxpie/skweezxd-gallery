@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# skweezxd — сайт-портфоліо
 
-## Getting Started
+Портфоліо графічного дизайнера: темний мінімалізм, галерея робіт з
+повноекранним переглядом, секція «Про мене» та контакти.
 
-First, run the development server:
+**Живий сайт:** https://skweezxd-gallery.vercel.app
+
+Стек: **Next.js 16** (App Router) · **React 19** · **TypeScript** · **Tailwind CSS 4** · **sharp**
+
+## Запуск локально
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Сайт відкриється на http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Як додати свої роботи
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Поклади зображення у папку `public/works` — вони автоматично з'являться
+в галереї. Нічого в коді правити не треба.
 
-## Learn More
+**Формати:** `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`, `.gif`
 
-To learn more about Next.js, take a look at the following resources:
+**Порядок** задається числовим префіксом в імені файлу:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+public/works/
+  01-brand-identity.png
+  02-poster-series.png
+  03-editorial-layout.png
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Підпис** під роботою будується з імені файлу: префікс і дефіси
+прибираються, перша літера стає великою.
 
-## Deploy on Vercel
+| Ім'я файлу                 | Підпис на сайті   |
+| -------------------------- | ----------------- |
+| `01-brand-identity.png`    | Brand identity    |
+| `04-фірмовий-стиль.jpg`    | Фірмовий стиль    |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+> Файли `01-…` – `08-…`, що лежать там зараз, — це демо. Вони створюються
+> скриптом [`scripts/generate-placeholders.mjs`](scripts/generate-placeholders.mjs)
+> перед збіркою, але **лише якщо папка порожня**. Щойно ти покладеш туди
+> свої роботи, скрипт нічого не робить. Щоб вимкнути його зовсім — прибери
+> рядок `"prebuild"` із `package.json`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Розміри й розмиті прев'ю рахуються автоматично під час збірки, тож
+зображення не «стрибають» при завантаженні.
+
+## Як змінити тексти й контакти
+
+Ім'я, email, соцмережі, список послуг та інструментів зібрані в одному
+файлі — [`src/lib/site.ts`](src/lib/site.ts). Довші тексти секції «Про
+мене» — у [`src/components/About.tsx`](src/components/About.tsx).
+
+## Деплой
+
+Сайт хоститься на Vercel. Галерея збирається статично, тому **нові
+роботи з'являються на сайті лише після нового деплою**.
+
+### Оновити сайт після додавання робіт
+
+Найпростіше — через Vercel CLI (вона вже встановлена):
+
+```bash
+vercel login
+```
+
+```bash
+vercel --prod
+```
+
+CLI сама завантажить зображення й запустить збірку.
+
+### Автодеплой з GitHub (рекомендовано на майбутнє)
+
+Створи репозиторій на GitHub, запуш туди проєкт і підключи його у Vercel
+(**Add New → Project → Import Git Repository**). Після цього кожен `git push`
+оновлюватиме сайт автоматично.
+
+### Свій домен
+
+Додається у Vercel: **Project → Settings → Domains**.
+
+## Структура
+
+```
+src/
+  app/
+    layout.tsx           метадані, шрифти, локаль uk
+    page.tsx             збірка секцій
+    opengraph-image.tsx  прев'ю для соцмереж
+    globals.css          палітра й базові стилі
+  components/
+    SiteHeader.tsx       навігація
+    Hero.tsx             перший екран
+    Works.tsx            секція галереї
+    GalleryGrid.tsx      masonry-сітка (клієнтський компонент)
+    Lightbox.tsx         повноекранний перегляд
+    About.tsx            про мене
+    SiteFooter.tsx       контакти
+  lib/
+    site.ts              особисті дані в одному місці
+    works.ts             читання public/works
+```
