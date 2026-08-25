@@ -2,23 +2,27 @@
 
 import { useCallback, useState } from "react";
 import { logout, type ActionState } from "@/app/admin/actions";
+import AlbumsPanel from "@/app/admin/AlbumsPanel";
 import SettingsPanel from "@/app/admin/SettingsPanel";
 import WorksPanel from "@/app/admin/WorksPanel";
+import type { Album } from "@/lib/albums";
 import type { SiteSettings } from "@/lib/settings";
 import type { Work } from "@/lib/works";
 
-type Tab = "works" | "texts";
+type Tab = "albums" | "works" | "texts";
 
 export default function AdminDashboard({
+  albums,
   works,
   settings,
   blobReady,
 }: {
+  albums: Album[];
   works: Work[];
   settings: SiteSettings;
   blobReady: boolean;
 }) {
-  const [tab, setTab] = useState<Tab>("works");
+  const [tab, setTab] = useState<Tab>("albums");
   const [message, setMessage] = useState<ActionState>({});
 
   const handleMessage = useCallback((state: ActionState) => {
@@ -26,6 +30,7 @@ export default function AdminDashboard({
   }, []);
 
   const tabs: Array<{ id: Tab; label: string }> = [
+    { id: "albums", label: "Альбоми" },
     { id: "works", label: "Роботи" },
     { id: "texts", label: "Тексти" },
   ];
@@ -108,9 +113,17 @@ export default function AdminDashboard({
       )}
 
       <div className="mt-8">
-        {tab === "works" ? (
-          <WorksPanel works={works} onMessage={handleMessage} />
-        ) : (
+        {tab === "albums" && (
+          <AlbumsPanel
+            albums={albums}
+            works={works}
+            onMessage={handleMessage}
+          />
+        )}
+        {tab === "works" && (
+          <WorksPanel albums={albums} works={works} onMessage={handleMessage} />
+        )}
+        {tab === "texts" && (
           <SettingsPanel settings={settings} onMessage={handleMessage} />
         )}
       </div>

@@ -7,9 +7,11 @@ import {
   deleteWork,
   finalizeUpload,
   moveWork,
+  setWorkAlbum,
   updateWorkTitle,
   type ActionState,
 } from "@/app/admin/actions";
+import type { Album } from "@/lib/albums";
 import type { Work } from "@/lib/works";
 
 type Upload = { key: string; name: string; percentage: number };
@@ -25,15 +27,18 @@ function safeFilename(name: string): string {
 }
 
 export default function WorksPanel({
+  albums,
   works,
   onMessage,
 }: {
+  albums: Album[];
   works: Work[];
   onMessage: (state: ActionState) => void;
 }) {
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [dragging, setDragging] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [targetAlbum, setTargetAlbum] = useState<string>(albums[0]?.id ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
 
   function run(action: () => Promise<ActionState>) {
@@ -68,7 +73,11 @@ export default function WorksPanel({
           },
         });
 
-        const result = await finalizeUpload(blob.url, blob.pathname);
+        const result = await finalizeUpload(
+          blob.url,
+          blob.pathname,
+          targetAlbum || null,
+        );
         onMessage(result);
       } catch (error) {
         onMessage({
@@ -84,6 +93,24 @@ export default function WorksPanel({
 
   return (
     <div className="space-y-8">
+      {albums.length > 0 && (
+        <label className="block text-xs uppercase tracking-[0.2em] text-ash">
+          Завантажувати в альбом
+          <select
+            value={targetAlbum}
+            onChange={(event) => setTargetAlbum(event.target.value)}
+            className="mt-1.5 w-full rounded-md border border-line bg-ink px-3 py-2 text-base tracking-normal text-bone normal-case outline-none focus:border-ember"
+          >
+            {albums.map((album) => (
+              <option key={album.id} value={album.id}>
+                {album.title}
+              </option>
+            ))}
+            <option value="">Без альбому (не публікувати)</option>
+          </select>
+        </label>
+      )}
+
       <div
         onDragOver={(event) => {
           event.preventDefault();
@@ -181,6 +208,33 @@ export default function WorksPanel({
                   className="mt-1.5 w-full rounded-md border border-line bg-ink px-3 py-2 text-base tracking-normal text-bone normal-case outline-none focus:border-ember"
                 />
               </label>
+
+              {albums.length > 0 && (
+                <label className="min-w-44 flex-1 text-xs uppercase tracking-[0.2em] text-ash">
+                  Альбом
+                  <select
+                    value={work.albumId ?? ""}
+                    disabled={pending}
+                    onChange={(event) =>
+                      run(() =>
+                        setWorkAlbum(work.id, event.target.value || null),
+                      )
+                    }
+                    className={`mt-1.5 w-full rounded-md border bg-ink px-3 py-2 text-base tracking-normal normal-case outline-none focus:border-ember ${
+                      work.albumId
+                        ? "border-line text-bone"
+                        : "border-ember/40 text-ember"
+                    }`}
+                  >
+                    <option value="">Без альбому (не на сайті)</option>
+                    {albums.map((album) => (
+                      <option key={album.id} value={album.id}>
+                        {album.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
 
               <div className="flex items-center gap-2">
                 <button

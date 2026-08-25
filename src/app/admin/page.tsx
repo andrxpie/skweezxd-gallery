@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AdminDashboard from "@/app/admin/AdminDashboard";
 import LoginForm from "@/app/admin/LoginForm";
+import { getAlbums } from "@/lib/albums";
 import { isAdminConfigured, isAuthenticated } from "@/lib/auth";
 import { isBlobConfigured } from "@/lib/blob-store";
 import { getSettings } from "@/lib/settings";
@@ -38,10 +39,15 @@ export default async function AdminPage() {
     return <LoginForm />;
   }
 
-  const [works, settings] = await Promise.all([getWorks(), getSettings()]);
+  const [albums, works, settings] = await Promise.all([
+    getAlbums(),
+    getWorks(),
+    getSettings(),
+  ]);
 
   return (
     <AdminDashboard
+      albums={albums}
       works={works}
       settings={settings}
       blobReady={isBlobConfigured()}

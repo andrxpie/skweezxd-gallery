@@ -7,6 +7,12 @@ import {
   requireAdmin,
   verifyPassword,
 } from "@/lib/auth";
+import {
+  ALBUMS_DOCUMENT,
+  getAlbums,
+  worksOfAlbum,
+  type Album,
+} from "@/lib/albums";
 import { deleteBlob, isBlobConfigured, writeDocument } from "@/lib/blob-store";
 import {
   SETTINGS_DOCUMENT,
@@ -24,10 +30,12 @@ import {
 
 export type ActionState = { error?: string; success?: string };
 
-/** Оновлюємо і головну, і саму адмінку: обидві читають ті самі документи. */
+/**
+ * Скидаємо кеш усіх сторінок, які читають ці документи: головна, адмінка
+ * і сторінки альбомів. "layout" охоплює вкладені маршрути на кшталт /album/*.
+ */
 function revalidateSite() {
-  revalidatePath("/");
-  revalidatePath("/admin");
+  revalidatePath("/", "layout");
 }
 
 function requireBlob() {
@@ -44,6 +52,11 @@ function toMessage(error: unknown): string {
 
 async function saveWorks(works: Work[]): Promise<void> {
   await writeDocument(WORKS_DOCUMENT, works);
+  revalidateSite();
+}
+
+async function saveAlbums(albums: Album[]): Promise<void> {
+  await writeDocument(ALBUMS_DOCUMENT, albums);
   revalidateSite();
 }
 
@@ -73,6 +86,7 @@ export async function logout(): Promise<void> {
 export async function finalizeUpload(
   url: string,
   pathname: string,
+  albumId: string | null = null,
 ): Promise<ActionState> {
   try {
     await requireAdmin();
@@ -81,6 +95,12 @@ export async function finalizeUpload(
     if (!pathname.startsWith("works/")) {
       return { error: "Некоректний шлях файлу" };
     }
+
+    // Альбом міг зникнути, поки тривало завантаження — тоді робота просто
+    // лишається нерозподіленою, а не посилається в нікуди.
+    const albums = await getAlbums();
+    const targetAlbum =
+      albumId && albums.some((album) => album.id === albumId) ? albumId : null;
 
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) {
@@ -95,6 +115,7 @@ export async function finalizeUpload(
       id: pathname,
       src: url,
       pathname,
+      albumId: targetAlbum,
       title: titleFromFilename(pathname.slice("works/".length)),
       ...meta,
     };
@@ -177,6 +198,179 @@ export async function moveWork(
 
     await saveWorks(reordered);
     return { success: "Порядок оновлено" };
+  } catch (error) {
+    return { error: toMessage(error) };
+  }
+}
+
+export async function setWorkAlbum(
+  id: string,
+  albumId: string | null,
+): Promise<ActionState> {
+  try {
+    await requireAdmin();
+    requireBlob();
+
+    if (albumId) {
+      const albums = await getAlbums();
+      if (!albums.some((album) => album.id === albumId)) {
+        return { error: "Альбом не знайдено" };
+      }
+    }
+
+    const works = await getWorks();
+    if (!works.some((work) => work.id === id)) {
+      return { error: "Роботу не знайдено" };
+    }
+
+    await saveWorks(
+      works.map((work) => (work.id === id ? { ...work, albumId } : work)),
+    );
+
+    return { success: albumId ? "Роботу перенесено" : "Роботу знято з альбому" };
+  } catch (error) {
+    return { error: toMessage(error) };
+  }
+}
+
+export async function createAlbum(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdmin();
+    requireBlob();
+
+    const title = String(formData.get("title") ?? "").trim();
+    if (!title) return { error: "Введи назву альбому" };
+
+    const albums = await getAlbums();
+    const album: Album = { id: crypto.randomUUID(), title, coverId: null };
+
+    await saveAlbums([...albums, album]);
+    return { success: `Альбом «${title}» створено` };
+  } catch (error) {
+    return { error: toMessage(error) };
+  }
+}
+
+export async function renameAlbum(
+  id: string,
+  title: string,
+): Promise<ActionState> {
+  try {
+    await requireAdmin();
+    requireBlob();
+
+    const trimmed = title.trim();
+    if (!trimmed) return { error: "Назва не може бути порожньою" };
+
+    const albums = await getAlbums();
+    if (!albums.some((album) => album.id === id)) {
+      return { error: "Альбом не знайдено" };
+    }
+
+    await saveAlbums(
+      albums.map((album) =>
+        album.id === id ? { ...album, title: trimmed } : album,
+      ),
+    );
+
+    return { success: "Назву збережено" };
+  } catch (error) {
+    return { error: toMessage(error) };
+  }
+}
+
+export async function setAlbumCover(
+  id: string,
+  coverId: string | null,
+): Promise<ActionState> {
+  try {
+    await requireAdmin();
+    requireBlob();
+
+    const albums = await getAlbums();
+    const album = albums.find((item) => item.id === id);
+    if (!album) return { error: "Альбом не знайдено" };
+
+    if (coverId) {
+      const works = await getWorks();
+      const belongs = worksOfAlbum(id, works).some((work) => work.id === coverId);
+      if (!belongs) return { error: "Обкладинкою може бути робота з цього альбому" };
+    }
+
+    await saveAlbums(
+      albums.map((item) => (item.id === id ? { ...item, coverId } : item)),
+    );
+
+    return { success: "Обкладинку оновлено" };
+  } catch (error) {
+    return { error: toMessage(error) };
+  }
+}
+
+export async function moveAlbum(
+  id: string,
+  direction: -1 | 1,
+): Promise<ActionState> {
+  try {
+    await requireAdmin();
+    requireBlob();
+
+    const albums = await getAlbums();
+    const index = albums.findIndex((album) => album.id === id);
+    if (index === -1) return { error: "Альбом не знайдено" };
+
+    const target = index + direction;
+    if (target < 0 || target >= albums.length) return {};
+
+    const reordered = [...albums];
+    [reordered[index], reordered[target]] = [
+      reordered[target],
+      reordered[index],
+    ];
+
+    await saveAlbums(reordered);
+    return { success: "Порядок оновлено" };
+  } catch (error) {
+    return { error: toMessage(error) };
+  }
+}
+
+/**
+ * Видаляє альбом, але не роботи — вони стають нерозподіленими й зникають із
+ * сайту, лишаючись в адмінці. Так випадковий клік не знищує файли.
+ */
+export async function deleteAlbum(id: string): Promise<ActionState> {
+  try {
+    await requireAdmin();
+    requireBlob();
+
+    const albums = await getAlbums();
+    if (!albums.some((album) => album.id === id)) {
+      return { error: "Альбом не знайдено" };
+    }
+
+    const works = await getWorks();
+    const released = works.filter((work) => work.albumId === id);
+
+    if (released.length > 0) {
+      await saveWorks(
+        works.map((work) =>
+          work.albumId === id ? { ...work, albumId: null } : work,
+        ),
+      );
+    }
+
+    await saveAlbums(albums.filter((album) => album.id !== id));
+
+    return {
+      success:
+        released.length > 0
+          ? `Альбом видалено, робіт знято з публікації: ${released.length}`
+          : "Альбом видалено",
+    };
   } catch (error) {
     return { error: toMessage(error) };
   }

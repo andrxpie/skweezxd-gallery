@@ -11,6 +11,11 @@ export type Work = {
   src: string;
   /** Шлях у Blob; null для файлів із public/works */
   pathname: string | null;
+  /**
+   * Альбом, до якого належить робота. Відсутнє поле — робота ще не розподілена
+   * (у старих записах його немає зовсім), тож публічно вона не показується.
+   */
+  albumId?: string | null;
   width: number;
   height: number;
   /** Підпис під роботою */
