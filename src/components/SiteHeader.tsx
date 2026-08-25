@@ -1,4 +1,4 @@
-import { site } from "@/lib/site";
+import type { SiteSettings } from "@/lib/settings";
 
 const navigation = [
   { label: "Роботи", href: "#works" },
@@ -6,7 +6,7 @@ const navigation = [
   { label: "Контакти", href: "#contact" },
 ];
 
-export default function SiteHeader() {
+export default function SiteHeader({ settings }: { settings: SiteSettings }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line/60 bg-ink/70 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-6 px-5 py-4 sm:px-8 lg:px-12">
@@ -14,7 +14,7 @@ export default function SiteHeader() {
           href="#top"
           className="font-display text-lg font-semibold tracking-tight text-bone transition hover:text-ember"
         >
-          {site.name}
+          {settings.name}
         </a>
 
         <nav aria-label="Основна навігація">

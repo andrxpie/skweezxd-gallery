@@ -1,12 +1,15 @@
 import { ImageResponse } from "next/og";
-import { site } from "@/lib/site";
+import { getSettings } from "@/lib/settings";
 
-export const alt = `${site.name} — graphic designer portfolio`;
+export const alt = "Graphic designer portfolio";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+export const revalidate = 60;
 
 // Тільки латиниця: вбудований у Satori шрифт не має кириличних гліфів.
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
+  const settings = await getSettings();
+
   return new ImageResponse(
     (
       <div
@@ -34,7 +37,7 @@ export default function OpengraphImage() {
         </div>
 
         <div style={{ display: "flex", fontSize: 180, letterSpacing: "-0.05em" }}>
-          {site.name}
+          {settings.name}
         </div>
 
         <div

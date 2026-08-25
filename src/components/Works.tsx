@@ -22,8 +22,8 @@ export default function Works({ works }: { works: Work[] }) {
         <GalleryGrid works={works} />
       ) : (
         <p className="rounded-sm border border-dashed border-line px-6 py-16 text-center text-ash">
-          Тут поки порожньо. Додай зображення у папку{" "}
-          <code className="text-bone">public/works</code> — вони автоматично
+          Тут поки порожньо. Додай зображення через адмінку на{" "}
+          <code className="text-bone">/admin</code> — вони одразу
           з&apos;являться у галереї.
         </p>
       )}

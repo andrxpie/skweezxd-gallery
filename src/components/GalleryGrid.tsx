@@ -22,7 +22,7 @@ export default function GalleryGrid({ works }: { works: Work[] }) {
       <div className="columns-1 gap-4 sm:columns-2 sm:gap-5 lg:columns-3">
         {works.map((work, index) => (
           <button
-            key={work.src}
+            key={work.id}
             ref={(element) => {
               tileRefs.current[index] = element;
             }}

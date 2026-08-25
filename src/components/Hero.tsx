@@ -1,6 +1,12 @@
-import { site } from "@/lib/site";
+import type { SiteSettings } from "@/lib/settings";
 
-export default function Hero({ workCount }: { workCount: number }) {
+export default function Hero({
+  settings,
+  workCount,
+}: {
+  settings: SiteSettings;
+  workCount: number;
+}) {
   return (
     <section
       id="top"
@@ -13,7 +19,7 @@ export default function Hero({ workCount }: { workCount: number }) {
       />
 
       <div className="relative mx-auto w-full max-w-[1400px] px-5 py-20 sm:px-8 lg:px-12">
-        {site.available && (
+        {settings.available && (
           <p className="animate-rise mb-8 inline-flex items-center gap-2.5 rounded-full border border-line px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-ash">
             <span className="relative flex size-1.5">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-ember opacity-70" />
@@ -24,16 +30,16 @@ export default function Hero({ workCount }: { workCount: number }) {
         )}
 
         <h1 className="animate-rise font-display text-[clamp(3rem,13vw,10.5rem)] leading-[0.85] font-bold tracking-[-0.04em] text-bone">
-          {site.name}
+          {settings.name}
         </h1>
 
         <div className="mt-10 flex flex-col gap-10 border-t border-line pt-8 md:flex-row md:items-end md:justify-between">
           <div className="animate-rise max-w-xl">
             <p className="text-sm uppercase tracking-[0.25em] text-ember">
-              {site.role} — {site.location}
+              {settings.role} — {settings.location}
             </p>
             <p className="mt-4 text-lg leading-relaxed text-ash sm:text-xl">
-              {site.tagline}
+              {settings.tagline}
             </p>
           </div>
 
