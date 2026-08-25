@@ -3,7 +3,7 @@
  * адмінці тексти живуть у сховищі, а це — база й запасний варіант.
  */
 export const site = {
-  name: "skweezxd",
+  name: "Roman Kovtunovych",
   role: "Графічний дизайнер",
   location: "Україна",
   tagline: "Візуальні системи, айдентика та графіка, які легко впізнати.",
@@ -19,10 +19,8 @@ export const site = {
   tools: [
     "Adobe Photoshop",
     "Adobe Illustrator",
-    "Adobe InDesign",
     "Figma",
-    "Blender",
-    "After Effects",
+    "CapCut",
   ],
   services: [
     "Логотипи та айдентика",

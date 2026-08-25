@@ -125,7 +125,10 @@ async function readWorksFromDisk(): Promise<Work[]> {
 
 export const getWorks = cache(async (): Promise<Work[]> => {
   if (isBlobConfigured()) {
-    return (await readDocument<Work[]>(WORKS_DOCUMENT)) ?? [];
+    // null означає, що маніфеста ще немає — Роман не зберіг жодної зміни, тож
+    // лишаємо демо з диска. Порожній масив — це вже свідомо порожня галерея.
+    const stored = await readDocument<Work[]>(WORKS_DOCUMENT);
+    if (stored) return stored;
   }
 
   return readWorksFromDisk();

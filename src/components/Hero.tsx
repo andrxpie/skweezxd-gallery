@@ -10,7 +10,7 @@ export default function Hero({
   return (
     <section
       id="top"
-      className="relative flex min-h-[calc(100svh-4.25rem)] items-center overflow-hidden"
+      className="relative flex min-h-[calc(100svh-5rem)] items-center overflow-hidden sm:min-h-[calc(100svh-4.25rem)]"
     >
       {/* М'яке світло за заголовком, щоб чорний фон не був плоским */}
       <div
@@ -29,7 +29,9 @@ export default function Hero({
           </p>
         )}
 
-        <h1 className="animate-rise font-display text-[clamp(3rem,13vw,10.5rem)] leading-[0.85] font-bold tracking-[-0.04em] text-bone">
+        {/* Розмір ведемо від ширини екрана, а break-words страхує від обрізання:
+            імʼя задається в адмінці, тож одне довге слово може не вміститись. */}
+        <h1 className="animate-rise font-display text-[clamp(2rem,10.5vw,10rem)] leading-[0.9] font-bold tracking-[-0.04em] break-words text-bone">
           {settings.name}
         </h1>
 
