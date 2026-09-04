@@ -2,14 +2,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { cache } from "react";
 import sharp from "sharp";
-import { isBlobConfigured, readDocument } from "@/lib/blob-store";
+import { isStorageConfigured, readDocument } from "@/lib/storage";
 
 export type Work = {
-  /** Стабільний ідентифікатор: шлях у Blob або ім'я локального файлу */
+  /** Стабільний ідентифікатор: ключ у сховищі або ім'я локального файлу */
   id: string;
   /** Публічний URL зображення */
   src: string;
-  /** Шлях у Blob; null для файлів із public/works */
+  /** Ключ обʼєкта у сховищі; null для файлів із public/works */
   pathname: string | null;
   /**
    * Альбом, до якого належить робота. Відсутнє поле — робота ще не розподілена
@@ -87,7 +87,7 @@ export async function buildImageMeta(input: Buffer): Promise<{
 }
 
 /**
- * Резервний режим: поки Blob не налаштований, галерея читає public/works —
+ * Резервний режим: поки сховище не налаштоване, галерея читає public/works —
  * так проєкт працює одразу після клонування й у локальній розробці.
  */
 async function readWorksFromDisk(): Promise<Work[]> {
@@ -129,7 +129,7 @@ async function readWorksFromDisk(): Promise<Work[]> {
 }
 
 export const getWorks = cache(async (): Promise<Work[]> => {
-  if (isBlobConfigured()) {
+  if (isStorageConfigured()) {
     // null означає, що маніфеста ще немає — Роман не зберіг жодної зміни, тож
     // лишаємо демо з диска. Порожній масив — це вже свідомо порожня галерея.
     const stored = await readDocument<Work[]>(WORKS_DOCUMENT);

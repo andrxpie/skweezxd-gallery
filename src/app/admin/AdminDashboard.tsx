@@ -15,12 +15,12 @@ export default function AdminDashboard({
   albums,
   works,
   settings,
-  blobReady,
+  storageReady,
 }: {
   albums: Album[];
   works: Work[];
   settings: SiteSettings;
-  blobReady: boolean;
+  storageReady: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("albums");
   const [message, setMessage] = useState<ActionState>({});
@@ -67,14 +67,14 @@ export default function AdminDashboard({
         </div>
       </header>
 
-      {!blobReady && (
+      {!storageReady && (
         <p
           role="alert"
           className="mt-6 rounded-md border border-ember/40 bg-ember/5 px-5 py-4 text-sm"
         >
-          Сховище не налаштоване, тому зміни зберегти не вийде. Створи Blob
-          store у Vercel (Storage → Create Blob store) і підключи його до цього
-          проєкту. Зараз показано демо-роботи з коду.
+          Сховище не налаштоване, тому зміни зберегти не вийде. Додай змінні
+          оточення <code className="text-bone">R2_*</code> (див. README) і зроби
+          редеплой. Зараз показано демо-роботи з коду.
         </p>
       )}
 

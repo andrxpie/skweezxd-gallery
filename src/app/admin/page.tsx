@@ -3,7 +3,7 @@ import AdminDashboard from "@/app/admin/AdminDashboard";
 import LoginForm from "@/app/admin/LoginForm";
 import { getAlbums } from "@/lib/albums";
 import { isAdminConfigured, isAuthenticated } from "@/lib/auth";
-import { isBlobConfigured } from "@/lib/blob-store";
+import { isStorageConfigured } from "@/lib/storage";
 import { getSettings } from "@/lib/settings";
 import { getWorks } from "@/lib/works";
 
@@ -50,7 +50,7 @@ export default async function AdminPage() {
       albums={albums}
       works={works}
       settings={settings}
-      blobReady={isBlobConfigured()}
+      storageReady={isStorageConfigured()}
     />
   );
 }

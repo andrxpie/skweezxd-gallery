@@ -1,6 +1,5 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
 import Image from "next/image";
 import { useRef, useState, useTransition } from "react";
 import {
@@ -16,14 +15,37 @@ import type { Work } from "@/lib/works";
 
 type Upload = { key: string; name: string; percentage: number };
 
-/** Файли з великими розмірами вантажимо частинами — так надійніше на слабкій мережі. */
-const MULTIPART_THRESHOLD = 10 * 1024 * 1024;
+type PresignResponse = { key: string; uploadUrl: string; publicUrl: string };
 
-function safeFilename(name: string): string {
-  const cleaned = name
-    .replace(/[^\p{L}\p{N}._-]+/gu, "-")
-    .replace(/^[-.]+|-+$/g, "");
-  return cleaned || `work-${Date.now()}.jpg`;
+/**
+ * Кладемо файл у сховище за підписаним посиланням. XHR, а не fetch: лише він
+ * повідомляє про прогрес, а завантаження великого фото без індикатора
+ * виглядає як зависання.
+ */
+function putWithProgress(
+  uploadUrl: string,
+  file: File,
+  onProgress: (percentage: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("PUT", uploadUrl);
+    request.setRequestHeader("content-type", file.type);
+
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress((event.loaded / event.total) * 100);
+      }
+    };
+
+    request.onload = () => {
+      if (request.status >= 200 && request.status < 300) resolve();
+      else reject(new Error(`сховище відповіло ${request.status}`));
+    };
+    request.onerror = () => reject(new Error("не вдалося зʼєднатися зі сховищем"));
+
+    request.send(file);
+  });
 }
 
 export default function WorksPanel({
@@ -60,22 +82,37 @@ export default function WorksPanel({
       ]);
 
       try {
-        const blob = await upload(`works/${safeFilename(file.name)}`, file, {
-          access: "public",
-          handleUploadUrl: "/api/blob/upload",
-          multipart: file.size > MULTIPART_THRESHOLD,
-          onUploadProgress: ({ percentage }) => {
-            setUploads((prev) =>
-              prev.map((item) =>
-                item.key === key ? { ...item, percentage } : item,
-              ),
-            );
-          },
+        const presignResponse = await fetch("/api/upload", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            filename: file.name,
+            contentType: file.type,
+            size: file.size,
+          }),
+        });
+
+        const presign = (await presignResponse.json()) as
+          | PresignResponse
+          | { error: string };
+
+        if (!presignResponse.ok || !("uploadUrl" in presign)) {
+          throw new Error(
+            "error" in presign ? presign.error : "не вдалося отримати посилання",
+          );
+        }
+
+        await putWithProgress(presign.uploadUrl, file, (percentage) => {
+          setUploads((prev) =>
+            prev.map((item) =>
+              item.key === key ? { ...item, percentage } : item,
+            ),
+          );
         });
 
         const result = await finalizeUpload(
-          blob.url,
-          blob.pathname,
+          presign.publicUrl,
+          presign.key,
           targetAlbum || null,
         );
         onMessage(result);

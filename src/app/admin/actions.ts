@@ -13,7 +13,7 @@ import {
   worksOfAlbum,
   type Album,
 } from "@/lib/albums";
-import { deleteBlob, isBlobConfigured, writeDocument } from "@/lib/blob-store";
+import { deleteObject, isStorageConfigured, writeDocument } from "@/lib/storage";
 import {
   SETTINGS_DOCUMENT,
   getSettings,
@@ -38,10 +38,10 @@ function revalidateSite() {
   revalidatePath("/", "layout");
 }
 
-function requireBlob() {
-  if (!isBlobConfigured()) {
+function requireStorage() {
+  if (!isStorageConfigured()) {
     throw new Error(
-      "Сховище не налаштоване. Створи Blob store у Vercel і зроби редеплой.",
+      "Сховище не налаштоване: бракує змінних R2_* у проєкті. Додай їх і зроби редеплой.",
     );
   }
 }
@@ -80,7 +80,7 @@ export async function logout(): Promise<void> {
 }
 
 /**
- * Викликається після того, як браузер завантажив файл у Blob: дочитуємо байти,
+ * Викликається після того, як браузер поклав файл у сховище: дочитуємо байти,
  * рахуємо розміри й blur, додаємо запис у маніфест.
  */
 export async function finalizeUpload(
@@ -90,7 +90,7 @@ export async function finalizeUpload(
 ): Promise<ActionState> {
   try {
     await requireAdmin();
-    requireBlob();
+    requireStorage();
 
     if (!pathname.startsWith("works/")) {
       return { error: "Некоректний шлях файлу" };
@@ -130,7 +130,7 @@ export async function finalizeUpload(
 export async function deleteWork(id: string): Promise<ActionState> {
   try {
     await requireAdmin();
-    requireBlob();
+    requireStorage();
 
     const works = await getWorks();
     const target = works.find((work) => work.id === id);
@@ -141,7 +141,7 @@ export async function deleteWork(id: string): Promise<ActionState> {
     // Сам файл прибираємо після маніфесту: якщо видалення впаде, у галереї
     // вже не буде посилання на нього, лишиться тільки сирота у сховищі.
     if (target.pathname) {
-      await deleteBlob(target.pathname).catch((error) => {
+      await deleteObject(target.pathname).catch((error) => {
         console.warn("[works] не вдалося видалити файл зі сховища", error);
       });
     }
@@ -158,7 +158,7 @@ export async function updateWorkTitle(
 ): Promise<ActionState> {
   try {
     await requireAdmin();
-    requireBlob();
+    requireStorage();
 
     const trimmed = title.trim();
     if (!trimmed) return { error: "Підпис не може бути порожнім" };
@@ -184,7 +184,7 @@ export async function moveWork(
 ): Promise<ActionState> {
   try {
     await requireAdmin();
-    requireBlob();
+    requireStorage();
 
     const works = await getWorks();
     const index = works.findIndex((work) => work.id === id);
@@ -209,7 +209,7 @@ export async function setWorkAlbum(
 ): Promise<ActionState> {
   try {
     await requireAdmin();
-    requireBlob();
+    requireStorage();
 
     if (albumId) {
       const albums = await getAlbums();
@@ -239,7 +239,7 @@ export async function createAlbum(
 ): Promise<ActionState> {
   try {
     await requireAdmin();
-    requireBlob();
+    requireStorage();
 
     const title = String(formData.get("title") ?? "").trim();
     if (!title) return { error: "Введи назву альбому" };
@@ -260,7 +260,7 @@ export async function renameAlbum(
 ): Promise<ActionState> {
   try {
     await requireAdmin();
-    requireBlob();
+    requireStorage();
 
     const trimmed = title.trim();
     if (!trimmed) return { error: "Назва не може бути порожньою" };
@@ -288,7 +288,7 @@ export async function setAlbumCover(
 ): Promise<ActionState> {
   try {
     await requireAdmin();
-    requireBlob();
+    requireStorage();
 
     const albums = await getAlbums();
     const album = albums.find((item) => item.id === id);
@@ -316,7 +316,7 @@ export async function moveAlbum(
 ): Promise<ActionState> {
   try {
     await requireAdmin();
-    requireBlob();
+    requireStorage();
 
     const albums = await getAlbums();
     const index = albums.findIndex((album) => album.id === id);
@@ -345,7 +345,7 @@ export async function moveAlbum(
 export async function deleteAlbum(id: string): Promise<ActionState> {
   try {
     await requireAdmin();
-    requireBlob();
+    requireStorage();
 
     const albums = await getAlbums();
     if (!albums.some((album) => album.id === id)) {
@@ -402,7 +402,7 @@ export async function saveSettings(
 ): Promise<ActionState> {
   try {
     await requireAdmin();
-    requireBlob();
+    requireStorage();
 
     const current = await getSettings();
     const text = (key: string, fallback: string) =>

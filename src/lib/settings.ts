@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { readDocument } from "@/lib/blob-store";
+import { readDocument } from "@/lib/storage";
 import { site } from "@/lib/site";
 
 export type SocialLink = {

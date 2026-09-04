@@ -7,7 +7,7 @@
 **Живий сайт:** https://skweezxd-gallery.vercel.app
 **Адмінка:** https://skweezxd-gallery.vercel.app/admin
 
-Стек: **Next.js 16** (App Router) · **React 19** · **TypeScript** · **Tailwind CSS 4** · **sharp** · **Vercel Blob**
+Стек: **Next.js 16** (App Router) · **React 19** · **TypeScript** · **Tailwind CSS 4** · **sharp** · **Cloudflare R2**
 
 ## Адмінка
 
@@ -35,32 +35,44 @@
 
 ### Налаштування (один раз)
 
-Адмінці потрібні дві змінні оточення у Vercel.
+Фото й дані зберігаються у **Cloudflare R2** (безкоштовно: 10 ГБ, 1 млн
+операцій запису та 10 млн читання на місяць).
 
-**1. Сховище для фото.** У панелі Vercel: **Storage → Create Database →
-Blob**, підключити до проєкту `skweezxd-gallery`. Змінна
-`BLOB_READ_WRITE_TOKEN` додасться сама.
+**1. Бакет.** Cloudflare → R2 → **Create bucket**, назва на твій розсуд.
 
-**2. Пароль.** **Settings → Environment Variables** → додати
-`ADMIN_PASSWORD` зі своїм значенням. Цей пароль і передаси Роману.
+**2. Публічна адреса.** Бакет → Settings → **Public Development URL → Enable**.
+Скопіюй адресу виду `https://pub-….r2.dev` — саме звідти сайт вантажить фото.
+
+**3. Ключі доступу.** R2 → **Manage API Tokens → Create API Token**, права
+*Object Read & Write*, обмежені цим бакетом. Збережи Access Key ID і Secret
+Access Key (Account ID видно там же).
+
+**4. CORS.** Бакет → Settings → **CORS policy**: дозволені origins
+`https://skweezxd-gallery.vercel.app` і `http://localhost:3000`, методи
+`PUT` і `GET`, заголовок `content-type`. Без цього браузер не зможе
+завантажувати фото.
+
+**5. Змінні оточення** у Vercel (**Settings → Environments → Production**):
+
+| Змінна | Що це |
+| --- | --- |
+| `R2_ACCOUNT_ID` | Account ID у Cloudflare |
+| `R2_ACCESS_KEY_ID` | з API-токена |
+| `R2_SECRET_ACCESS_KEY` | з API-токена |
+| `R2_BUCKET` | назва бакета |
+| `R2_PUBLIC_BASE_URL` | `https://pub-….r2.dev` |
+| `ADMIN_PASSWORD` | пароль для входу в `/admin` |
 
 Після цього — редеплой, щоб змінні підхопились.
 
-> Поки сховище не підключене, сайт працює у резервному режимі: показує
+> Поки сховище не налаштоване, сайт працює у резервному режимі: показує
 > демо-роботи з `public/works` і тексти за замовчуванням, а адмінка чесно
 > попереджає, що зберегти зміни не вийде.
 
 ### Локальна розробка
 
-Скопіюй змінні у `.env.local` (файл у git не потрапляє):
-
-```
-ADMIN_PASSWORD=будь-який-локальний-пароль
-BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
-```
-
-Токен береться у Vercel: **Storage → твій Blob store → .env.local**.
-Без нього адмінка відкриється, але збереження буде недоступне.
+Ті самі змінні поклади у `.env.local` (файл у git не потрапляє). Без них
+адмінка відкриється, але збереження буде недоступне.
 
 ## Запуск локально
 
@@ -72,7 +84,7 @@ npm run dev
 
 ## Резервний спосіб додати роботи (без адмінки)
 
-Якщо Blob не підключений, галерея читає папку `public/works`. Поклади
+Якщо R2 не налаштований, галерея читає папку `public/works`. Поклади
 зображення туди — вони з'являться після наступної збірки.
 
 **Формати:** `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`, `.gif`
@@ -133,8 +145,8 @@ src/
       AlbumsPanel.tsx      створення й керування альбомами
       WorksPanel.tsx       завантаження та керування фото
       SettingsPanel.tsx    форма текстів
-    api/blob/upload/
-      route.ts             токен для завантаження напряму у сховище
+    api/upload/
+      route.ts             підписане посилання для завантаження у R2
   components/
     SiteHeader.tsx         навігація
     Hero.tsx               перший екран
@@ -145,11 +157,11 @@ src/
     About.tsx              про мене
     SiteFooter.tsx         контакти
   lib/
-    blob-store.ts          версійовані JSON-документи у Vercel Blob
+    storage.ts             доступ до Cloudflare R2 (S3 API)
     settings.ts            тексти сайту + значення за замовчуванням
     albums.ts              альбоми та вибір обкладинки
     plural.ts              українське відмінювання після числівника
-    works.ts               список робіт (Blob або public/works)
+    works.ts               список робіт (R2 або public/works)
     auth.ts                пароль і сесія адмінки
     site.ts                початкові значення для налаштувань
 ```

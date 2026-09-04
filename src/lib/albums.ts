@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { isBlobConfigured, readDocument } from "@/lib/blob-store";
+import { isStorageConfigured, readDocument } from "@/lib/storage";
 import type { Work } from "@/lib/works";
 
 export type Album = {
@@ -13,7 +13,7 @@ export type Album = {
 export const ALBUMS_DOCUMENT = "albums";
 
 export const getAlbums = cache(async (): Promise<Album[]> => {
-  if (!isBlobConfigured()) return [];
+  if (!isStorageConfigured()) return [];
 
   return (await readDocument<Album[]>(ALBUMS_DOCUMENT)) ?? [];
 });
